@@ -1,0 +1,12 @@
+[Unit]
+Description= washing machine sensor
+
+[Container]
+Image=ghcr.io/braccae/washing-machine-notifier:latest
+AutoUpdate=registry
+Environment=MQTT_BROKER=
+Environment=MQTT_PORT=1883
+Environment=MQTT_TOPIC=homeassistant/washingmachine/status
+Environment=MQTT_USERNAME=
+Environment=MQTT_PASSWORD=
+Environment=RTSP_URL=
