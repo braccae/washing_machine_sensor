@@ -458,17 +458,24 @@ def main():
     
     # Initialize video capture with improved RTSP settings
     def setup_video_capture():
+        # Set environment variables before creating VideoCapture object
+        # These control how ffmpeg handles RTSP streams
+        os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp|stimeout;60000000'
+        
+        # Create the capture object with our URL
         cap = cv2.VideoCapture(RTSP_URL)
         
-        # Improve RTSP connection reliability
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)  # Reduce buffer size
+        # Set buffer size if supported
+        try:
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)  # Reduce buffer size
+        except AttributeError:
+            print("Warning: CAP_PROP_BUFFERSIZE not supported in this OpenCV version")
         
-        # Set RTSP transport to TCP instead of UDP to reduce packet loss
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264'))
-        cap.set(cv2.CAP_PROP_RTSP_TRANSPORT, 0)  # Force TCP: 0=auto, 1=UDP, 2=TCP
-        
-        # These settings can help with timeout issues
-        os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp|stimeout;60000000'
+        # Try to set codec if supported
+        try:
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264'))
+        except AttributeError:
+            print("Warning: Could not set H264 codec explicitly")
         
         return cap
     
