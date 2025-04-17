@@ -450,9 +450,7 @@ def main():
     global FLASH_THRESHOLD
     FLASH_THRESHOLD = args.threshold
     
-    # Redirect stderr to suppress OpenCV decoding errors
-    old_stderr = sys.stderr
-    sys.stderr = NullWriter()
+
     
     # Setup MQTT client
     client = setup_mqtt_client()
@@ -460,11 +458,25 @@ def main():
     # Publish Home Assistant discovery configurations
     publish_ha_discovery(client)
     
-    # Initialize video capture
-    cap = cv2.VideoCapture(RTSP_URL)
+    # Initialize video capture with improved RTSP settings
+    def setup_video_capture():
+        cap = cv2.VideoCapture(RTSP_URL)
+        
+        # Improve RTSP connection reliability
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)  # Reduce buffer size
+        
+        # Set RTSP transport to TCP instead of UDP to reduce packet loss
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264'))
+        cap.set(cv2.CAP_PROP_RTSP_TRANSPORT, 0)  # Force TCP: 0=auto, 1=UDP, 2=TCP
+        
+        # These settings can help with timeout issues
+        os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp|stimeout;60000000'
+        
+        return cap
+    
+    cap = setup_video_capture()
     
     if not cap.isOpened():
-        sys.stderr = old_stderr  # Restore stderr for error output
         print(f"Error: Could not open video stream {RTSP_URL}")
         return
     
@@ -490,10 +502,10 @@ def main():
             # Check if video stream is still open
             if not cap.isOpened():
                 print("Error: Video stream closed unexpectedly")
-                # Try to reconnect
+                # Try to reconnect using our improved setup
                 cap.release()
                 time.sleep(5)
-                cap = cv2.VideoCapture(RTSP_URL)
+                cap = setup_video_capture()
                 continue
             
             # Get stable status by sampling multiple frames
@@ -504,7 +516,7 @@ def main():
                 print("Error: Failed to get stable status. Reconnecting...")
                 cap.release()
                 time.sleep(5)
-                cap = cv2.VideoCapture(RTSP_URL)
+                cap = setup_video_capture()
                 continue
             
             # Use a single frame for debug visualization
@@ -604,7 +616,6 @@ def main():
     except Exception as e:
         print(f"Unexpected error: {e}")
     finally:
-        sys.stderr = old_stderr  # Restore stderr
         cap.release()
         client.loop_stop()
         client.disconnect()
