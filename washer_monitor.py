@@ -450,8 +450,6 @@ def main():
     global FLASH_THRESHOLD
     FLASH_THRESHOLD = args.threshold
     
-
-    
     # Setup MQTT client
     client = setup_mqtt_client()
     
