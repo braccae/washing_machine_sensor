@@ -1,6 +1,6 @@
 # Washing Machine Notifier
 
-The my washing machine doesn't have an alarm to signify that it's done, but I had a spare webcam and a few hours of time so I made something better.
+A Python application that monitors washing machine status through video feed analysis and publishes updates to MQTT/Home Assistant.
 
 ### Environment Variables
 
